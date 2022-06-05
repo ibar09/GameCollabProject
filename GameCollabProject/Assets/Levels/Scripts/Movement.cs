@@ -1,4 +1,4 @@
-
+using System.Collections;
 using UnityEngine;
 
 public class Movement : MonoBehaviour
@@ -8,85 +8,88 @@ public class Movement : MonoBehaviour
     [SerializeField] private float jumpSpeed;
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private LayerMask wallLayer;
-    
-    private string facingSide;//hethi bech na3ref el collision men ana jiha tsir (there is probably an easier way but i couldnt find it improve if u can)
-    //public bool grounded; na7it grounded w badtlha b methode bech najm nsepari el wall jumps from normal jumps ma8ir man3ml variable lel wall 
-    private BoxCollider2D boxCollider;
+    public Transform TopRight;
+    public Transform BotttomLeft;
+    private bool firstTime = true;// hedhi bsh tkhali l player yjumpi mara barka mn ala wall maghirha player can spam Space and get over the wall
     private void Awake()
     {
-            body = GetComponent<Rigidbody2D>();
-            boxCollider = GetComponent<BoxCollider2D>();
+        body = GetComponent<Rigidbody2D>();
     }
-   
-   private void Update() {
-          
-           if(Input.GetKey(KeyCode.Space) && (isGrounded()||onWall()))
-            {
-              jump();
-            }
-            
-            //hethi bech el player mayti7ech ki yolseg fel 7it (lel wall jumps)
-            if(onWall())
-            {
-                    body.gravityScale=0;
-            }
-            else
-            {
-                    body.gravityScale=2;
-            }
-   }
-   private void FixedUpdate() {
-           //dhrabt f delta time bsh twali smooth l movement
-           
-           float direction=Input.GetAxisRaw("Horizontal");
-            body.velocity=new Vector2(direction*speed*Time.deltaTime,body.velocity.y);
-   }
-   private void jump()
-   {
-        float wallJumpDirection;
-        if(isGrounded())
+
+    //badlt barsha fil wall jumping system
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space) && (isGrounded() || onWall()))
         {
-        body.velocity=Vector2.up*jumpSpeed;
+            if (onWall() && firstTime)
+            {
+                jump();
+                firstTime = false;
+            }
+            else if (isGrounded())
+            {
+                jump();
+                firstTime = true;
+            }
+        }
+    }
+    private void FixedUpdate()
+    {
+        //dhrabt f delta time bsh twali smooth l movement
+
+        float direction = Input.GetAxisRaw("Horizontal");
+        body.velocity = new Vector2(direction * speed * Time.deltaTime, body.velocity.y);
+    }
+    private void jump()
+    {
+
+        if (onWall())
+        {
+            body.gravityScale = 2;
+            body.velocity = Vector2.up * jumpSpeed;
+
+        }
+        else if (isGrounded())
+        {
+            body.velocity = Vector2.up * jumpSpeed;
+        }
+    }
+    private IEnumerator WallHoldingTimer() //hehdi bsh l player yalsg just 2 seconds aal hit mayalsgsh ala toul
+    {
+        body.gravityScale = 0;
+        yield return new WaitForSeconds(2);
+        body.gravityScale = 2;
+
+    }
+
+    private void OnCollisionEnter2D(Collision2D coll)//hethi lkol lel facing side i moved the other code to isGrounded and onWall 
+    {
+        if (coll.gameObject.tag == "Wall")
+        {
+            StartCoroutine(WallHoldingTimer());
         }
 
-        else if (onWall())
+    }
+    private void OnCollisionExit2D(Collision2D other)
+    {
+        if (other.gameObject.tag == "Wall")
         {
-        if(facingSide=="right")
-        {
-        wallJumpDirection=1;
+            body.gravityScale = 2; //ki yokhrj ml wall l gravity tarja3
+            firstTime = true; //ki yokhrj ml wall first time tarjaa true 
         }
-        else
-        {
-          wallJumpDirection=-1;
-        }
-        body.velocity=new Vector2(wallJumpDirection*3,jumpSpeed);// if u can put a negative value in the first parametere when player collides on his right side and vise
-        //versa delete the whole facing side and walljumpdirection bullshit.
-            
-        }
-   }
-   
-private void OnCollisionEnter2D(Collision2D coll)//hethi lkol lel facing side i moved the other code to isGrounded and onWall 
-   {
-           if (coll.gameObject.tag == "Wall") {
-            if ((this.transform.position.x - coll.collider.transform.position.x) < 0) {
-                facingSide="left";
-            } else if ((this.transform.position.x - coll.collider.transform.position.x) > 0) {
-                facingSide="right";
-            }
-           }
-          
-   }
-private bool isGrounded()//hethi fi blaset grounded 
-{
-RaycastHit2D raycastHit= Physics2D.BoxCast(boxCollider.bounds.center,boxCollider.bounds.size,0,Vector2.down,0.1f,groundLayer);
-return raycastHit.collider !=null;
-}
+    }
+    // badlt el raycast bl overlap area khtr omri makhdmt b raycast xd khtr kn fama glitches w shakit li homa ml raycast donc badlt
+    private bool isGrounded()
+    {
 
-private bool onWall()//hethi tverifi fama wall wala 
-{
-RaycastHit2D raycastHit= Physics2D.BoxCast(boxCollider.bounds.center,boxCollider.bounds.size,0,new Vector2(transform.localScale.x,0),0.1f,wallLayer);
-return raycastHit.collider !=null;
+        return Physics2D.OverlapArea(TopRight.position, BotttomLeft.position, groundLayer);
+    }
+
+    private bool onWall()
+    {
+
+        return Physics2D.OverlapArea(TopRight.position, BotttomLeft.position, wallLayer);
+
+    }
 
 }
-}
-   
