@@ -17,11 +17,6 @@ public class Movement : MonoBehaviour
     public Transform BotttomLeft;
     private bool firstTime = true;// hedhi bsh tkhali l player yjumpi mara barka mn ala wall maghirha player can spam Space and get over the wall
 
-    //dashing
-    [SerializeField]private float dashDistance;
-    private float doubleTapTimer;
-    private KeyCode lastKeyCode;
-
     private void Awake()
     {
         body = GetComponent<Rigidbody2D>();
@@ -30,37 +25,7 @@ public class Movement : MonoBehaviour
     //badlt barsha fil wall jumping system
     private void Update()
     {
-        //hethi partie taa dashing 
-            //dashing right 
-        if(Input.GetKeyDown(KeyCode.RightArrow))
-        {   //second time pressing
-            if(doubleTapTimer>Time.time && lastKeyCode==KeyCode.RightArrow)
-            {
-                dash(1);// 1 is for the direction
-            }
-            //first time pressing 
-            else
-            {
-                doubleTapTimer=Time.time+0.4f; // after u press a key 3andk el 7a9 fi 0.5 secs to verify the condition fel if li 9ablha
-            }
-            lastKeyCode=KeyCode.RightArrow;
-        }
-                //dashing left
-            if(Input.GetKeyDown(KeyCode.LeftArrow))
-        {   //second time pressing
-            if(doubleTapTimer>Time.time && lastKeyCode==KeyCode.LeftArrow)
-            {
-                dash(-1);// -1 is for the direction
-            }
-            //first time pressing 
-            else
-            {
-                doubleTapTimer=Time.time+0.4f; 
-            }
-            lastKeyCode=KeyCode.LeftArrow;
 
-
-        }
         if (Input.GetKeyDown(KeyCode.Space) && (isGrounded() || onWall()))
         {
             if (onWall() && firstTime)
@@ -74,21 +39,21 @@ public class Movement : MonoBehaviour
                 firstTime = true;
             }
         }
-    
     }
     private void FixedUpdate()
     {
-        //dhrabt f delta time bsh twali smooth l movement
 
         float direction = Input.GetAxisRaw("Horizontal");
-        body.velocity = new Vector2(direction * speed * Time.deltaTime, body.velocity.y);
+        transform.position += new Vector3(direction * speed * Time.deltaTime, 0, 0);
+
     }
     private void jump()
     {
 
         if (onWall())
         {
-            body.velocity=new Vector2(-10,10);//im trying to make the player bounce of the wall up and in the opposite direction instead of climibing it ( didnt work u try it )
+            Debug.Log("WALL JUMP");
+            body.AddForce(new Vector2(-7, 8), ForceMode2D.Impulse);
             body.gravityScale = 2;
 
         }
@@ -99,7 +64,8 @@ public class Movement : MonoBehaviour
     }
     private IEnumerator WallHoldingTimer() //hehdi bsh l player yalsg just 2 seconds aal hit mayalsgsh ala toul
     {
-        body.gravityScale = 0;
+        body.velocity = new Vector2(body.velocity.x, 0);
+        body.gravityScale = 0.1f;
         yield return new WaitForSeconds(2);
         body.gravityScale = 2;
 
@@ -133,14 +99,6 @@ public class Movement : MonoBehaviour
 
         return Physics2D.OverlapArea(TopRight.position, BotttomLeft.position, wallLayer);
 
-    }
-
-    private void dash(int direction)
-    {   
-        
-        body.gravityScale=0;
-        body.velocity=new Vector2(dashDistance*direction,0);//i straight up cant understand how to add a force in a specific direction in unity if u do know tell me 
-        body.gravityScale=2;
     }
 
 }
